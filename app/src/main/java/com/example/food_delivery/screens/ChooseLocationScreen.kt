@@ -26,6 +26,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -38,6 +40,9 @@ import androidx.navigation.NavHostController
 @Preview
 @Composable
 fun ChooseLocationScreen(navController: NavHostController) {
+    val city = remember {
+        mutableStateOf("")
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -53,111 +58,117 @@ fun ChooseLocationScreen(navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally,
 
             ) {
-            dropDownMenu()
-
+            CityDropDown(
+                listOfCities = listOf(
+                    "Select City", "Surat", "Rajkot", "Bhavnagar", "Mumbai", "Pune",
+                ),
+                onItemSelected = {
+                    city.value = it
+                }
+            )
         }
 
     }
 }
 
 
-@Composable
-fun dropDownMenu() {
-
-    var expanded by remember { mutableStateOf(false) }
-    val suggestions = listOf("surat" , "rajkot" , "bhavnagar" , "bharuch")
-    var selectedText by remember { mutableStateOf("") }
-
-    var textfieldSize by remember { mutableStateOf(Size.Zero) }
-
-    val icon = if (expanded)
-        Icons.Filled.KeyboardArrowUp
-    else
-        Icons.Filled.KeyboardArrowDown
-
-
-    Column(Modifier.padding(20.dp)) {
-        OutlinedTextField(
-            value = selectedText,
-            onValueChange = { selectedText = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .onGloballyPositioned { coordinates ->
-                    //This value is used to assign to the DropDown the same width
-                    textfieldSize = coordinates.size.toSize()
-                },
-            readOnly = true,
-            label = { Text("Label") },
-            trailingIcon = {
-                Icon(icon, "contentDescription",
-                    Modifier.clickable { expanded = !expanded })
-            }
-        )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .width(with(LocalDensity.current) { textfieldSize.width.toDp() })
-        ) {
-
-            suggestions.forEach {
-                label->
-                DropdownMenuItem(text = { Text(text = label )}, onClick = {
-                    selectedText = label
-                    expanded = false
-                })
-            }
-        }
-    }
-
-}
-
+//@Composable
+//fun dropDownMenu() {
+//
+//    var expanded by remember { mutableStateOf(false) }
+//    val suggestions = listOf("surat" , "rajkot" , "bhavnagar" , "bharuch")
+//    var selectedText by remember { mutableStateOf("") }
+//
+//    var textfieldSize by remember { mutableStateOf(Size.Zero) }
+//
+//    val icon = if (expanded)
+//        Icons.Filled.KeyboardArrowUp
+//    else
+//        Icons.Filled.KeyboardArrowDown
+//
+//
+//    Column(Modifier.padding(20.dp)) {
+//        OutlinedTextField(
+//            value = selectedText,
+//            onValueChange = { selectedText = it },
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .onGloballyPositioned { coordinates ->
+//                    //This value is used to assign to the DropDown the same width
+//                    textfieldSize = coordinates.size.toSize()
+//                },
+//            readOnly = true,
+//            label = { Text("Label") },
+//            trailingIcon = {
+//                Icon(icon, "contentDescription",
+//                    Modifier.clickable { expanded = !expanded })
+//            }
+//        )
+//        DropdownMenu(
+//            expanded = expanded,
+//            onDismissRequest = { expanded = false },
+//            modifier = Modifier
+//                .width(with(LocalDensity.current) { textfieldSize.width.toDp() })
+//        ) {
+//
+//            suggestions.forEach {
+//                label->
+//                DropdownMenuItem(text = { Text(text = label )}, onClick = {
+//                    selectedText = label
+//                    expanded = false
+//                })
+//            }
+//        }
+//    }
+//}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DropDown() {
-    val itemList = listOf("select city", "surat", "ahmedabad", "rajkot", "vadodara", "bhavnagar")
-    var isExpand by remember {
+fun CityDropDown(
+    modifier: Modifier = Modifier,
+    listOfCities: List<String>,
+    onItemSelected: (item: String) -> Unit,
+) {
+
+    val expanded = remember {
         mutableStateOf(false)
     }
-    var selectedCity by remember {
-        mutableStateOf(itemList[0])
+    val selectedItem = remember {
+        mutableStateOf(listOfCities[0])
     }
-    ExposedDropdownMenuBox(expanded = isExpand, onExpandedChange = {
-        isExpand != isExpand
-    }) {
-        TextField(
-            modifier = Modifier.menuAnchor(),
-            value = selectedCity,
-            onValueChange = {},
+    ExposedDropdownMenuBox(
+        expanded = expanded.value,
+        onExpandedChange = {
+            expanded.value != expanded.value
+        }
+    ) {
+        OutlinedTextField(
+            value = selectedItem.value,
+            onValueChange = {
+                selectedItem.value = it
+            },
+            modifier = modifier
+                .fillMaxWidth()
+                .menuAnchor()
+                .focusRequester(FocusRequester()),
             readOnly = true,
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpand) }
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded.value)
+            }
         )
-
-        ExposedDropdownMenu(expanded = isExpand,
-            onDismissRequest = {
-                isExpand = !isExpand
-            }) {
-            itemList.forEachIndexed { index, text ->
-                DropdownMenuItem(text = { Text(text = text) }, onClick = {
-                    selectedCity = itemList[index]
-                    isExpand = false
-                },
-                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                )
+        ExposedDropdownMenu(expanded = expanded.value, onDismissRequest = {
+            expanded.value = false
+        }) {
+            listOfCities.forEach {
+                DropdownMenuItem(text = {
+                    Text(text = it)
+                }, onClick = {
+                    selectedItem.value = it
+                    onItemSelected.invoke(selectedItem.value)
+                    expanded.value != expanded.value
+                })
             }
         }
-    }
-}
-
-@Composable
-fun dp() {
-    val itemList = listOf("surat" , "ahemadabad")
-    var isExpaded by remember {
-        mutableStateOf(false)
-    }
-    var selectedCity by remember {
-        mutableStateOf("")
     }
 
 }
